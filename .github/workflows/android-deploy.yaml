@@ -1,4 +1,4 @@
-name: 🍏🤖 Deploy to play store
+name: 🍏🤖 Deploy to Play Store
 
 on:
   workflow_dispatch:
@@ -13,7 +13,7 @@ jobs:
       GPS_JSON_KEY: ${{ secrets.GPS_JSON_KEY }}
       RELEASE_KEYSTORE_FILE: ${{ secrets.RELEASE_KEYSTORE_FILE }}
       KEYSTORE_PROPERTIES: ${{ secrets.KEYSTORE_PROPERTIES }}
-      SLACK_URL: ${{ secrets.SLACK_URL }} # 👈 add this in GitHub secrets
+      SLACK_URL: ${{ secrets.SLACK_URL }} # 👈 add Slack webhook in repo secrets
     steps:
       - name: ⬇️ Checkout repository
         uses: actions/checkout@v3
@@ -34,13 +34,19 @@ jobs:
       - name: Update version number from tag
         run: |
           TAG_NAME=${{ github.ref_name }}
-          VERSION=${TAG_NAME#v}
-          echo "FLUTTER_BUILD_NAME=$VERSION" >> $GITHUB_ENV
-          MAJOR=$(echo $VERSION | cut -d. -f1)
-          MINOR=$(echo $VERSION | cut -d. -f2)
-          PATCH=$(echo $VERSION | cut -d. -f3)
-          NUMBER=$MAJOR$MINOR$PATCH
-          echo "FLUTTER_BUILD_NUMBER=$NUMBER" >> $GITHUB_ENV
+          if [[ "$TAG_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            VERSION=$TAG_NAME
+            echo "FLUTTER_BUILD_NAME=$VERSION" >> $GITHUB_ENV
+            MAJOR=$(echo $VERSION | cut -d. -f1)
+            MINOR=$(echo $VERSION | cut -d. -f2)
+            PATCH=$(echo $VERSION | cut -d. -f3)
+            NUMBER=$MAJOR$MINOR$PATCH
+            echo "FLUTTER_BUILD_NUMBER=$NUMBER" >> $GITHUB_ENV
+          else
+            echo "⚠️ Not a version tag, using defaults"
+            echo "FLUTTER_BUILD_NAME=0.0.1" >> $GITHUB_ENV
+            echo "FLUTTER_BUILD_NUMBER=1" >> $GITHUB_ENV
+          fi
 
       - name: 📦 Get Packages
         run: flutter pub get
@@ -52,16 +58,32 @@ jobs:
           bundler-cache: true
 
       - name: Setup play store service
-        run: echo "$GPS_JSON_KEY" >> ./android/play-store.json
+        run: echo "$GPS_JSON_KEY" > ./android/play-store.json
 
       - name: Setup store key properties
-        run: echo "$KEYSTORE_PROPERTIES" >> ./android/key.properties
+        run: echo "$KEYSTORE_PROPERTIES" > ./android/key.properties
 
       - name: Get the release keystore
         run: |
           echo $RELEASE_KEYSTORE_FILE | base64 --decode > android/app/whattodo_keystore.jks
 
-      - name: Build and Deploy to Play store
+      - name: Build and Deploy to Play Store
         run: |
           cd ./android
-          fastlane android beta
+          bundle exec fastlane android beta
+
+      # ✅ Slack notification on success
+      - name: Notify Slack (success)
+        if: success()
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data \
+          '{"text": "✅ Android build and deploy completed successfully!\nVersion: '${FLUTTER_BUILD_NAME}'\nBuild Number: '${FLUTTER_BUILD_NUMBER}'"}' \
+          $SLACK_URL
+
+      # ❌ Slack notification on failure
+      - name: Notify Slack (failure)
+        if: failure()
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data \
+          '{"text": "❌ Android build/deploy failed for ref: '${{ github.ref_name }}'"}' \
+          $SLACK_URL
