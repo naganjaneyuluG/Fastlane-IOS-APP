@@ -14,7 +14,7 @@ platform :android do
 
     # Notify Slack
     slack(
-      slack_url: "https://hooks.slack.com/services/XXXX/YYYY/ZZZZ", # 👈 replace with your webhook
+      slack_url: "https://hooks.slack.com/services/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", # 👈 replace with your webhook
       message: "📦 Android APK build completed successfully",
       success: true,
       payload: {
@@ -70,7 +70,7 @@ platform :android do
 
     # Notify Slack
     slack(
-      slack_url: "https://hooks.slack.com/services/XXXX/YYYY/ZZZZ", # 👈 replace with your webhook
+      slack_url: "https://hooks.slack.com/services/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", # 👈 replace with your webhook
       message: "🚀 Android build uploaded to Google Play (Internal track)",
       success: true,
       payload: {
