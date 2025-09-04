@@ -1,29 +1,84 @@
-# This file contains the fastlane.tools configuration
-# You can find the documentation at https://docs.fastlane.tools
-#
-# For a list of all available actions, check out
-#
-#     https://docs.fastlane.tools/actions
-#
-# For a list of all available plugins, check out
-#
-#     https://docs.fastlane.tools/plugins/available-plugins
-#
-
-# Uncomment the line if you want fastlane to automatically update itself
-# update_fastlane
-
 default_platform(:android)
 
 platform :android do
-  desc "Deploy a new version to the Google Play"
+  ##############################################################
+  # Build APK only (no Play Store upload)
+  ##############################################################
+  desc "Build APK only (no Play Store upload)"
+  lane :build_apk do
+    updated_version_name = ENV["FLUTTER_BUILD_NAME"] || "1.0.0"
+    updated_version_number = ENV["FLUTTER_BUILD_NUMBER"] || "1"
+
+    # Build APK with Flutter
+    sh "flutter build apk --release --build-name=#{updated_version_name} --build-number=#{updated_version_number}"
+
+    # Notify Slack
+    slack(
+      slack_url: "https://hooks.slack.com/services/XXXX/YYYY/ZZZZ", # 👈 replace with your webhook
+      message: "📦 Android APK build completed successfully",
+      success: true,
+      payload: {
+        "Version Name" => updated_version_name,
+        "Version Code" => updated_version_number,
+        "Output" => "build/app/outputs/flutter-apk/app-release.apk",
+        "Lane" => lane_context[SharedValues::LANE_NAME]
+      }
+    )
+  end
+
+  ##############################################################
+  # Build AAB only (no Play Store upload)
+  ##############################################################
+  desc "Build AAB only (no Play Store upload)"
+  lane :build_aab do
+    updated_version_name = ENV["FLUTTER_BUILD_NAME"] || "1.0.0"
+    updated_version_number = ENV["FLUTTER_BUILD_NUMBER"] || "1"
+
+    # Build AAB with Flutter
+    sh "flutter build appbundle --release --build-name=#{updated_version_name} --build-number=#{updated_version_number}"
+
+    # Notify Slack
+    slack(
+      slack_url: "https://hooks.slack.com/services/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", # 👈 replace with your webhook
+      message: "📦 Android AAB build completed successfully",
+      success: true,
+      payload: {
+        "Version Name" => updated_version_name,
+        "Version Code" => updated_version_number,
+        "Output" => "build/app/outputs/bundle/release/app-release.aab",
+        "Lane" => lane_context[SharedValues::LANE_NAME]
+      }
+    )
+  end
+
+  ##############################################################
+  # Beta lane - requires Google Play credentials
+  ##############################################################
+  desc "Deploy a new version to the Google Play (requires credentials)"
   lane :beta do
     updated_version_name = ENV["FLUTTER_BUILD_NAME"]
     updated_version_number = ENV["FLUTTER_BUILD_NUMBER"]
+
+    # Build APK with Flutter
     sh "flutter build apk --release --build-name=#{updated_version_name} --build-number=#{updated_version_number}"
+
+    # Upload to Play Store
     upload_to_play_store(
       track: "internal",
       apk: "../build/app/outputs/flutter-apk/app-release.apk",
+    )
+
+    # Notify Slack
+    slack(
+      slack_url: "https://hooks.slack.com/services/XXXX/YYYY/ZZZZ", # 👈 replace with your webhook
+      message: "🚀 Android build uploaded to Google Play (Internal track)",
+      success: true,
+      payload: {
+        "Version Name" => updated_version_name,
+        "Version Code" => updated_version_number,
+        "Track" => "internal",
+        "Lane" => lane_context[SharedValues::LANE_NAME]
+      }
     )
   end
 end
