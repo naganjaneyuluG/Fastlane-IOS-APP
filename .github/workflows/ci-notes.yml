@@ -14,13 +14,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - uses: GudditiN/release-scribe@v1
+          
+      - name: Release Scribe
+        uses: GudditiN/release-scribe@v1.0.0
         with:
           api_key:        ${{ secrets.GROQ }}
           provider:       groq
           update_release: 'true'
           github_token:   ${{ secrets.GH_TOKEN }}
+
 
       - name: Commit changelog
         run: |
