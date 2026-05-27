@@ -16,7 +16,7 @@ jobs:
           fetch-depth: 0
 
       - name: Release Scribe
-        uses: GudditiN/release-scribe@v1.0.1
+        uses: GudditiN/release-scribe@v1.0.3
         with:
           api_key:        ${{ secrets.GROQ }}
           provider:       groq
