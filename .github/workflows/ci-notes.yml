@@ -18,8 +18,8 @@ jobs:
       - name: Release Scribe
         uses: GudditiN/release-scribe@v1.0.2
         with:
-          api_key:        ${{ secrets.GROQ }}
-          provider:       groq
+          api_key:        ${{ secrets.GEMINI }}
+          provider:       gemini
           update_release: 'true'
           github_token:   ${{ secrets.GH_TOKEN }}
 
